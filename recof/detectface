@@ -1,0 +1,28 @@
+from importlib.resources import path
+import  cv2 
+import numpy as np 
+face_cascade= cv2.CascadeClassifier('C:/Users/PC/Desktop/projectpy/haarcascade_frontalface_default.xml')
+path="C:/Users/PC/Desktop/projectpy/DATASET" #chemin pour sauvgarder les images 
+Id= input("enter votre Id svp:")
+cap=cv2.VideoCapture(0);  snum=0 #ouverture de la camera
+while(True):
+    ret,img= cap.read()
+    if (ret==0):
+         print ("erreur la camera n'a pas demarrer ")
+         break
+    else:
+        cv2.imshow('img',img)
+        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY) #transformation au niveau du gris
+        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+        for (x,y,w,h) in faces :     
+            cv2.rectangle(img,(x,y) , (x+w,y+h),(255,0,0) , 2)  #le carré de haar cascade
+            roi_gray = gray[y:y+h, x:x+w]
+            cv2.imshow('img', img)
+            if not (Id==0):
+                snum=snum+1
+                cv2.imwrite(path+ str(Id)+str(snum) + ".png" , roi_gray)
+        k=cv2.waitKey(30) & 0xff #echap
+        if k==27:
+            break
+cap.release()
+cv2.destroyAllWindows()

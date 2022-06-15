@@ -1,0 +1,116 @@
+import keras as ker
+import cv2                  
+import matplotlib.pyplot as plt     
+import random    
+import os  #manipulation des dossiers et fichiers
+import numpy as np # la manipulation des tableaux
+from PIL import Image                   
+from keras.models import Sequential # le modele qui sera utilisé
+from keras.layers.core import Dense
+from keras.utils import np_utils     # NumPy related tools
+from keras.layers.core import Dense, Dropout, Activation # type de couche qui serons utiliser dans ce model
+import pandas as pda
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
+def getfiles():
+    Data=[]; labels=[]; dim=100 
+    Base_Dir="C:/Users/PC/Desktop/projectpy/apprentissage" #chemin de base d'apprentissage
+    Base_Dir=input("Donner le repertoire des images: \n")
+    print("base directory: ", Base_Dir)
+    idx=0; pers=[] ; dim=100
+    for root,dirs,files in os.walk(Base_Dir): 
+        print("root: ",root)
+        print("fichiers = ", files) #affichage 
+        print("directory:" ,dirs)
+        pers.append(dirs)
+        for file in files:
+           print("liste de fichiers: ",files)
+           print("file = ",file)
+           if file.endswith("jpeg") or file.endswith("jpg") or file.endswith("png"):
+               print("file image N°=  ",file)
+               paths=os.path.join(root,file) #joindre le fichier et chemin
+               print("nom fichir complet :   ",paths)
+               print("chemin label: ",os.path.basename(root))  
+               imgf= Image.open(paths)
+               print(paths)
+               pil_image = Image.open(paths).convert("L")  
+               res_img = pil_image.resize((dim,dim)) #redimension
+               vect_img= np.reshape(res_img,(dim*dim)) #remodeler
+               print("taille image  : ", vect_img.shape)
+               image_array = np.array(vect_img, "uint8") #la matrice devient un vecteur
+               #uint8  pour accepter que les nombres positifs
+               label = idx
+               labels.append(label)
+               Data.append(image_array)
+        idx=idx+1
+    data=np.array(Data)
+    Labels=np.array(labels)
+    print("la taille de data ",data.shape)           
+    return data,Labels,pers
+dim = 100                  
+print("chemin des images d'apprentissage : ")
+path="C:/Users/PC/Desktop/projectpy/DATASET"                                                                                                                                                  
+datatrain,labeltrain,perso=getfiles()      #l'appel de la fonction getfile pour l'apprentissage                                                
+print("TRAIN labels : \n ",labeltrain)
+print("taille des labels : ");print(labeltrain.shape)
+print("mes images en memoires :",datatrain)
+print("chemin des images de Tests : ")                  
+datatest,labeltest,perso=getfiles()       #l'appel de la fonction getfile pour le test                                                   
+print("Test   labels: \n ",labeltest)
+print("taille des labels : "); print(labeltest.shape)
+print("datatrain shape", datatrain.shape);print("labeltrain shape", labeltrain.shape) #affichage
+print("datatest shape", datatest.shape);print("labeltest shape", labeltest.shape)
+
+datatrain = datatrain.astype('float32')  #
+datatest = datatest.astype('float32')
+datatrain /= 255.0    #le nombre binaire de l'image
+datatest /= 255.0;  print("Training matrix shape", datatrain.shape) #
+print("Testing matrix shape", datatest.shape)
+drop=0.1 #La méthode drop() supprime la ligne ou la colonne spécifiée. En spécifiant l'axe de la colonne ( axis='columns' ), ​​la méthode drop() supprime la colonne spécifiée.
+nb_classes = 44
+labeltrain=labeltrain-1 
+labeltest=labeltest-1
+print("labeltrain ",labeltrain[0:5]) #afficher les 5 1er nombre de la matrice
+
+labeltrain = np_utils.to_categorical(labeltrain, nb_classes) #np_utils. to_categorical est utilisé pour convertir un tableau de données étiquetées (de 0 à nb_classes - 1 ) en un vecteur chaud. La doc officielle avec un exemple.
+labeltest = np_utils.to_categorical(labeltest, nb_classes) #convertir en matrice
+
+print("labeltrain ",labeltrain[0:5])
+#---------------------Modélisation du MLP simple----------------------------------------------
+model = Sequential() 
+nbNeuron1=512 #1er couche caché
+nbNeuron2=512 #2em cc
+nbNeuron3=128 #3em cc
+nbNeuron4=128 #4em cc
+model.add(Dense(nbNeuron1, input_shape=(dim*dim,))) 
+# Une "activation" est une fonction non linéaire appliquée à la sortie de la couche ci-dessus.
+# L'unité linéaire rectifiée (ReLU) convertit toutes les entrées négatives en nœuds de la couche suivante pour qu'elles soient nulles.
+# Ces entrées ne sont alors pas considérées comme étant déclenchées. # Les valeurs positives d'un nœud sont inchangées.
+model.add(Activation('relu'))
+# Dropout met à zéro une sélection de sorties aléatoires (c'est-à-dire, désactive leur activation)
+# Dropout aide à protéger le modèle contre la mémorisation ou le "overfitting" des données d'entraînement.
+model.add(Dropout(drop)) 
+model.add(Dense(nbNeuron2)); model.add(Activation('relu'));  model.add(Dropout(drop)) # Ajout 2em couche
+model.add(Dense(nbNeuron3)); model.add(Activation('relu')); model.add(Dropout(drop)) # Ajout 3em couche
+model.add(Dense(nbNeuron4));model.add(Activation('relu')); model.add(Dropout(drop))  #Ajout 4em couche
+model.add(Dense(nb_classes))
+# L'activation "softmax" représente une distribution de probabilité sur K différents résultats possibles.
+# Ses valeurs sont toutes non négatives et totalisent 1.
+model.add(Activation('softmax'))
+# Résumer du  modèle construit
+model.summary()
+print('  Let"s use the sgd or adam optimizer for learning')
+from keras import losses 
+from keras import optimizers 
+from keras import metrics 
+model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+model.fit(datatrain, labeltrain, batch_size=10, epochs=30, verbose=1, validation_data=(datatest,labeltest))
+#----------Phase de test-----------------------------------------------------------------------------------
+score = model.evaluate(datatest, labeltest) 
+print('Test score:', score[0])
+print('Test accuracy:', score[1])
+model.save('C:/Users/PC/Desktop/projectpy/modelsaveMLPtry.h5')
+print(score)
+
+
+
